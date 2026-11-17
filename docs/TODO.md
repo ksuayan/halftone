@@ -8,6 +8,25 @@ Status: `[ ]` open · `[~]` in progress · `[x]` done · `[-]` dropped/deferred
 
 ---
 
+## Product decisions (2026-11-17)
+
+| Topic | Decision | Implications |
+| --- | --- | --- |
+| Output device | 600 dpi laser printer, positive on transparency film | One device pixel ≈ 42.3 µm. Ink must be pure `#000000`, because any gray gets screened by the printer. Printed with **Fit to Page** (see below). Minimum reliable dot on film must be measured (hypothesis: ≥ 3 px ≈ 0.13 mm). At 22 LPI a cell is about 27 px wide (about 740 tone levels), so the printer resolution doesn't limit tone. |
+| Target apps | Affinity Designer and Inkscape; standard SVG, no binary data | Test import early: physical units (`in`/`mm`), `viewBox` scale, fill rule, holes, arc commands, and large-path performance. No embedded rasters or fonts. |
+| Size target | 9 × 12 in and A3 (297 × 420 mm) | At 22 LPI: about 52k cells (9 × 12) and about 94k (A3). At 45 LPI: about 220k and 390k. Benchmarks and limits are sized to A3 at 45 LPI as the upper case. Both sizes exceed Letter, so this needs a tabloid or A3 laser printer. |
+| Registration marks | Yes | Need a canvas layout: image area plus margin for marks, within the printer's non-printable border. |
+| Preview | Yes, PNG | `--preview <file.png>`, rasterized from the final geometry with `tiny-skia`, so the preview matches the SVG exactly. |
+| Print scaling | **Fit to Page** | Fit to Page rescales the artwork to the printable area, which changes the effective LPI and dot sizes. Mitigation: make the SVG canvas match the target paper's printable area (paper size minus a configurable `printer_margin`), so Fit to Page scales by about 1.0. Report the expected scale and effective LPI, and warn when the scale differs from 1.0 by more than a tolerance (e.g. 2%). The registration marks double as a check of the actual scale. |
+| Platforms | macOS first; Linux and Windows if practical | CI matrix on all three; release binaries for macOS first. |
+| Dependencies | **Pure Rust.** C/C++ (or other) only with a compelling, documented justification | Favors `moxcms` over `lcms2` and `i_overlay` over `clipper2`. Any exception is recorded here with the reason. |
+| License | **MIT** (switched from GPL-3.0 on 2026-11-17) | `LICENSE` replaced. Every dependency must be MIT-compatible; enforce with `cargo deny`. |
+| Performance | **5–10 min hard ceiling** for the largest target (A3 at 45 LPI) | A ceiling, not the goal: benchmarks still report stage timings, and any stage near the ceiling is a bug. |
+| Downscaling | **Scale the photo to the target output size before conversion** | Order: decode → orientation → alpha → ICC → linear light → **downscale** → tonal response → sampling. Downscale in linear light (correct averaging; also anti-aliases against moiré). Target resolution comes from the output size and LPI (D22). |
+| Edge policy | **Whole cells only** (default) | Draw only cells that fall entirely inside the image area; no clipped half-dots. Future option: edge trimming (clip to the exact image rectangle). |
+
+---
+
 ## Open decisions
 
 Each decision is owned by the experiment or phase that resolves it. Record
@@ -18,9 +37,9 @@ the outcome and evidence here, then update the spec.
 | D1 | Default screen angle (22.5° candidate) — S§21.1, A§6.6 | Exp E (print test) | |
 | D2 | Default LPI for 110 mesh (22 conservative, 22–27.5 range) — S§21.2, A§6.3 | Exp E | |
 | D3 | LPI interpretation: relation to pitch, rotation, canvas — S§7.2, S§21.3 | Exp B | |
-| D4 | Luminance model / working color space / untagged-ICC fallback; `lcms2` vs `moxcms` — S§5.4, S§6.2, A§5, A§7.8 | Exp A | |
+| D4 | Luminance model / working color space / untagged-ICC fallback; `moxcms` preferred (pure Rust), `lcms2` only if compelling — S§5.4, S§6.2, A§5, A§7.8 | Exp A | |
 | D5 | Alpha default (composite on white?) and extra modes — S§5.3 | Exp A | |
-| D6 | Geometry engine: `i_overlay` vs `clipper2` — S§15.2, A§7.4–7.5 | Exp D | |
+| D6 | Geometry engine: `i_overlay` vs `clipper2` (pure-Rust preference: `clipper2` only if compelling) — S§15.2, A§7.4–7.5 | Exp D | |
 | D7 | Circle representation: polygon vs curve-aware — S§21.7, A§8.2 | Exp D | |
 | D8 | Polygon tolerance (physical radial error) — A§8.3 | Exp D + Exp E | |
 | D9 | Integer vs float geometry; integer scale — A§8.5 | Exp D | |
@@ -36,8 +55,17 @@ the outcome and evidence here, then update the spec.
 | D19 | Generation needs source file vs cached data; source hash — S§12.4, S§21.12 | Phase 3 | |
 | D20 | SVG via crate vs hand-written serializer — S§15.3 | Phase 4 | |
 | D21 | Final crate boundaries (merge any tiny crates?) — S§14.2 | Phase 0 close | |
-| D22 | Analysis resolution: downsample factor per cell vs full-resolution sampling — A§7.8, A§12.3 | Exp A | |
+| D22 | Downscale target: pixels per cell (or a ppi floor) at the output size — A§7.8, A§12.3 | Exp A | Policy decided (downscale after pre-processing, before conversion); the factor is still open |
 | D23 | Global allocator: system vs `mimalloc` — A§7.6 | Phase 6 | |
+| D24 | Hybrid geometry: isolated circles (`d < p`) as exact SVG arcs, union only overlapping clusters | Exp D | |
+| D25 | Shadows above 50%: accept filled-in holes, cap maximum coverage, or switch dot shape | Exp E | |
+| D26 | Source smoothing/sharpening before sampling (moiré from textured or printed sources) | Exp A/B | |
+| D27 | Determinism scope: same machine and version, or byte-identical across platforms | Exp D (ties to D9) | |
+| D28 | Performance and memory targets | Kyo | **Decided:** 5–10 min hard ceiling for A3 at 45 LPI; memory target still open |
+| D29 | Layout: mark style and placement, margin, `printer_margin` for Fit to Page, edge policy | Phase 3 | Edge policy **decided:** whole cells only; trimming deferred |
+| D30 | License | Kyo | **Decided:** MIT |
+| D31 | Config source path: relative to the JSON or absolute | Phase 3 | |
+| D32 | Safety-limit defaults: max input pixels, cells, vertices | Phase 1 | |
 
 ---
 
@@ -53,7 +81,7 @@ for the decisions above. Not shipped code.
 - [ ] Convert via `lcms2` to a working RGB space; measure cost
 - [ ] Compare `moxcms` (pure Rust) against `lcms2`
 - [ ] Produce a linear-light luminance plane (`0.0` = black, `1.0` = white)
-- [ ] Downsample with `fast_image_resize` to a cell-relative resolution; measure time, peak memory and sampling error (D22)
+- [ ] Downscale in linear light with `fast_image_resize` to a resolution derived from output size and LPI; find the smallest pixels-per-cell factor whose sampling error stays within tolerance (D22)
 - [ ] Verify against known color patches and grayscale ramps
 - [ ] Compare alpha compositing on white vs other backgrounds
 - [ ] Write up: decoder choice, ICC strategy, internal pixel representation, analysis resolution
@@ -85,10 +113,16 @@ for the decisions above. Not shipped code.
 - [ ] Measure runtime, peak memory, vertex count, SVG size
 - [ ] Check licenses and maintenance health
 - [ ] Render holes in at least two independent SVG renderers (A§8.7); use `resvg` to check filled area automatically
+- [ ] Prototype hybrid output: exact arcs for isolated circles, union only for overlapping clusters (D24)
+- [ ] Import test files (9 × 12 and A3, 22 and 45 LPI) into **Affinity Designer** and **Inkscape**: physical size, holes, arcs, load and edit time (D7, D14, D24)
+- [ ] Check float output on Apple Silicon vs x86 Linux (D27)
 
 ### Experiment E — Print test chart → D1, D2, D8 (needs physical printing)
 
-- [ ] Charts for 110 mesh at 22, 24 and 27.5 LPI
+- [ ] Charts for 110 mesh at 22, 24 and 27.5 LPI, printed on the 600 dpi laser printer to transparency at 100% scale
+- [ ] Dot-size ramp in device pixels (1–6 px) to find the minimum dot that holds on film and through exposure
+- [ ] Shadow ramp (50–100%) to see where holes fill in (D25)
+- [ ] Check toner density/opacity on film; note whether a densifier is needed
 - [ ] Angle variants: 15°, 22.5°, 30°, 45°
 - [ ] Tonal ramp and minimum-feature ramp
 - [ ] Expose and print; record which marks survive
@@ -96,6 +130,9 @@ for the decisions above. Not shipped code.
 ### Phase 0 close
 
 - [ ] Final dependency list with versions to pin; verify the A§7.8 candidates (maintenance, license, MSRV)
+- [ ] Confirm every dependency license against the D30 choice with `cargo deny`; prefer pure-Rust dependencies for cross-platform builds
+- [ ] Set the memory target (D28; time ceiling decided)
+- [ ] Confirm no C/C++ dependencies remain, or document why one is compelling
 - [ ] Final crate graph (D21)
 - [ ] Benchmark plan (S§16.4, A§12.4)
 - [ ] Update spec to Draft 0.2 with resolved decisions
@@ -113,7 +150,8 @@ for the decisions above. Not shipped code.
 - [ ] `halftone-types`:
   - [ ] Physical length type with canonical unit (D15); `in`/`cm` conversion only at boundaries
   - [ ] Pixel dimensions, luminance, angle (degrees, normalized)
-  - [ ] Paper-size catalog: Letter, Legal, Tabloid, A3, A4, A5 (D17), easy to extend
+  - [ ] Paper-size catalog: Letter, Legal, Tabloid, A3, A4, A5 (D17), easy to extend; add 9 × 12 in as a named size
+  - [ ] Safety-limit defaults (D32)
   - [ ] Config structs (serde), explicit field names with units (S§3)
   - [ ] Error conventions: `thiserror` in libraries, `anyhow` (or `miette`) in the CLI only
 - [ ] `#![forbid(unsafe_code)]` by default
@@ -141,7 +179,7 @@ for the decisions above. Not shipped code.
 ### `halftone-core`
 
 - [ ] Linear-light luminance per D4: 256-entry sRGB→linear LUT for 8-bit input; `par_chunks_exact_mut(width)` over rows (A§12.2)
-- [ ] Downsample to the analysis resolution per D22 before the float stages
+- [ ] Downscale to the output-size resolution per D22 after pre-processing (orientation, alpha, ICC, linear light) and before tonal response and sampling; record source and working resolution in the config
 - [ ] Tonal response: black point, white point, gamma, contrast, brightness;
       monotonic and deterministic (S§6.3)
 - [ ] Luminance → target coverage, `dark_larger` default and inverted mode (S§6.1)
@@ -162,6 +200,9 @@ for the decisions above. Not shipped code.
 - [ ] Rotation, explicit origin/phase, coverage of the canvas
 - [ ] Physical ↔ source coordinate mapping
 - [ ] Contain fit with recorded placement and margins; crop mode per D18
+- [ ] Canvas layout: image area, mark margin, `printer_margin` so Fit to Page scales by about 1.0 (D29)
+- [ ] Edge policy: whole cells only, i.e. cells fully inside the image area (default). Keep the clipping hook for a future `--edge trim` option
+- [ ] Report expected Fit to Page scale and effective LPI; warn when the scale differs from 1.0 by more than the tolerance
 - [ ] Rows/columns computed per the D3 convention (not naive `width × LPI`)
 - [ ] Tests: rotated placement, no overflow or negative dimensions (proptest)
 
@@ -207,6 +248,8 @@ for the decisions above. Not shipped code.
 - [ ] Physical `width`/`height` in the chosen unit plus a matching `viewBox`
 - [ ] Transparent background, no raster, no extra metadata
 - [ ] Compact, deterministic number formatting: round, then `ryu`
+- [ ] Registration marks: crosshairs outside the image area, in the same ink, as separate subpaths (or a separate `<path>`; decide in D29)
+- [ ] Ink color validation: warn on anything other than pure black for laser output
 - [ ] Output validator (S§19): well-formed (`roxmltree`), dimensions, viewBox, color, one path, finite coordinates, within canvas
 
 **Exit:** valid single-color positive SVG from every supported fixture.
@@ -228,6 +271,7 @@ for the decisions above. Not shipped code.
 - [ ] `--threads` via `rayon::ThreadPoolBuilder` (fallback `RAYON_NUM_THREADS`)
 - [ ] `tracing` spans per stage; `--verbose` prints stage timings
 - [ ] `indicatif` progress, with `ParallelProgressIterator` on the parallel stages
+- [ ] `--preview <file.png>`: rasterize the final geometry with `tiny-skia` at a chosen dpi
 - [ ] `validate` checks a config and, optionally, an existing SVG
 
 ---
@@ -248,6 +292,7 @@ for the decisions above. Not shipped code.
 ## Phase 6 — Performance and hardening (S§16, S§17)
 
 - [ ] `criterion` benchmarks for each stage (S§16.1) on the S§16.4 matrix
+- [ ] End-to-end check: A3 at 45 LPI from a large photo stays well under the 10-minute ceiling (D28)
 - [ ] Peak-memory tracking for each stage with `dhat`
 - [ ] Rayon for per-cell work; parallel union only if D10 shows it is safe and faster
 - [ ] Determinism check: identical SVG at 1 thread and N threads (no float `reduce`/`sum` affecting geometry)
@@ -258,7 +303,9 @@ for the decisions above. Not shipped code.
 - [ ] Integration tests (S§17.3): explicit LPI, mesh-derived LPI, overrides, inversion, one compound path
 - [ ] Regression tests that check structure, bounding box, area and component count; no byte-for-byte checks (S§17.4)
 - [ ] Rasterized visual regression comparisons with `resvg` / `tiny-skia` (A§11.5)
-- [ ] `docs/algorithms.md`, README usage and release packaging
+- [ ] CI matrix: macOS (arm64), Linux (x86_64), Windows (x86_64)
+- [ ] `docs/algorithms.md`, README usage and release packaging (macOS binaries first)
+- [ ] Print workflow guide: laser printer settings (Fit to Page with matching `printer_margin`, no toner saving, darkest density), checking scale with the registration marks, film handling
 
 **Exit:** performance measured, major failure modes covered, release behavior documented.
 
