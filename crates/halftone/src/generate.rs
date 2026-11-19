@@ -138,6 +138,7 @@ pub fn generate(
         pitch_mm: pitch,
         angle_deg: config.screen.angle_deg,
         min_dot_mm: config.tone.min_dot_mm,
+        keep_radius_mm: crate::layout::keep_radius_mm(pitch, config.geometry.tolerance_um),
     };
     let placement = place_marks(&img, &spec, &ToneCurve::from(&config.tone), limits.max_cells, |x, y| {
         plane.bilinear((x - img.x0) * sx, (y - img.y0) * sy)

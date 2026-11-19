@@ -116,7 +116,7 @@ pub fn analyze(req: &AnalyzeRequest, limits: &Limits) -> Result<(Config, Vec<Iss
         printer_margin_mm: req.printer_margin_mm.unwrap_or(d.printer_margin_mm),
         fit: Fit::Contain,
         ink: req.ink.clone().unwrap_or_else(|| "#000000".into()),
-        registration_marks: req.registration_marks.unwrap_or(true),
+        registration_marks: req.registration_marks.unwrap_or(false),
         display_units: req.display_units,
     };
     let mut config = Config {
@@ -191,12 +191,12 @@ pub(crate) fn derive_layout(c: &Config, limits: &Limits) -> Result<Layout, Error
         .into());
     }
     let cells = lattice
-        .whole_cells(&page.image, pitch * std::f64::consts::FRAC_1_SQRT_2)
+        .whole_cells(&page.image, layout::keep_radius_mm(pitch, c.geometry.tolerance_um))
         .cells
         .len() as u64;
     if cells == 0 {
         return Err(Error::Layout(format!(
-            "the {:.1} x {:.1} mm image area holds no whole screen cell at {} lpi; use larger paper, a higher LPI, or --no-registration-marks",
+            "the {:.1} x {:.1} mm image area holds no whole screen cell at {} lpi; use larger paper, a higher LPI, or turn off registration marks",
             page.image.width(),
             page.image.height(),
             c.screen.lpi

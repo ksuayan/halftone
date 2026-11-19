@@ -13,6 +13,15 @@ pub const TARGET_ARM_MM: f64 = 5.0;
 /// Target stroke: 0.5 pt, about 4 printer dots at 600 dpi.
 pub const MARK_STROKE_MM: f64 = 0.5 * 25.4 / 72.0;
 
+/// Outer extent of the largest possible dot as drawn: the area-preserving
+/// polygon's vertex radius for a 100 % dot (pitch / sqrt 2), plus 1 µm for
+/// rounding vertices to integer micrometres. Cells closer than this to the
+/// image edge are dropped (whole-cell policy), so no vertex leaves the image.
+pub fn keep_radius_mm(pitch_mm: f64, tolerance_um: f64) -> f64 {
+    let largest = pitch_mm * std::f64::consts::FRAC_1_SQRT_2;
+    halftone_geometry::polygon_radius(largest, tolerance_um / 1000.0) + 0.001
+}
+
 #[derive(Clone, Debug, PartialEq)]
 pub struct PageLayout {
     pub page_width_mm: f64,
@@ -31,7 +40,7 @@ pub fn compute(output: &Output, source_px: (u32, u32)) -> Result<PageLayout, Lay
     let (aw, ah) = (pw - 2.0 * band, ph - 2.0 * band);
     if aw <= 1.0 || ah <= 1.0 {
         return Err(LayoutError(format!(
-            "no room for the image: page {pw:.1} x {ph:.1} mm minus {band} mm mark band per side; use larger paper, a smaller printer margin, or --no-registration-marks"
+            "no room for the image: page {pw:.1} x {ph:.1} mm minus {band} mm mark band per side; use larger paper, a smaller printer margin, or turn off registration marks"
         )));
     }
     let (sw, sh) = (source_px.0 as f64, source_px.1 as f64);

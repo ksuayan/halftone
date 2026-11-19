@@ -42,6 +42,7 @@ fn analyze_recommends_from_mesh_and_records_user_choices() {
     assert_eq!(c.source.path, "p.png", "stored relative to the config directory");
     assert!(c.layout.cells > 0);
     assert_eq!(c.user_set, vec!["output.paper"]);
+    assert!(!c.output.registration_marks, "registration marks are off by default");
 
     let mut req = request(img, dir.path(), "a5");
     req.lpi = Some(30.0);
@@ -70,7 +71,9 @@ fn uniform_gray_prints_its_target_coverage() {
     let dir = tempfile::tempdir().unwrap();
     // sRGB 128 -> linear Y 0.2159 -> target coverage 0.784.
     let img = write_image(dir.path(), "g.png", 200, 300, |_, _| 128);
-    let (c, _) = analyze(&request(img, dir.path(), "a5"), &Limits::default()).unwrap();
+    let mut req = request(img, dir.path(), "a5");
+    req.registration_marks = Some(true);
+    let (c, _) = analyze(&req, &Limits::default()).unwrap();
     let g = generate(&c, dir.path(), &Limits::default(), &GenerateOptions::default()).unwrap();
     let ink = area_mm2(&g.artwork);
     let cell_area = g.config.layout.cells as f64 * g.config.layout.pitch_mm.powi(2);
@@ -153,4 +156,23 @@ fn limits_are_enforced() {
         analyze(&request(img, dir.path(), "a3"), &tiny),
         Err(Error::Image(_))
     ));
+}
+
+#[test]
+fn full_size_dots_stay_on_the_page_without_marks() {
+    // Black image: every cell gets the largest dot (coverage 1). With no mark
+    // band the image area touches the page edge, so polygon vertices (which sit
+    // slightly outside the circle) must still land inside the page.
+    let dir = tempfile::tempdir().unwrap();
+    for (name, w, h) in [("tall.png", 200, 300), ("wide.png", 300, 200), ("square.png", 250, 250)] {
+        let img = write_image(dir.path(), name, w, h, |_, _| 0);
+        for angle in [0.0, 22.5, 45.0] {
+            let mut req = request(img.clone(), dir.path(), "a5");
+            req.angle_deg = Some(angle);
+            let (c, _) = analyze(&req, &Limits::default()).unwrap();
+            assert!(!c.output.registration_marks);
+            let r = generate(&c, dir.path(), &Limits::default(), &GenerateOptions::default());
+            assert!(r.is_ok(), "{name} at {angle}°: {:?}", r.err());
+        }
+    }
 }

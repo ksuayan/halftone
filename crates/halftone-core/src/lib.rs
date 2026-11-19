@@ -22,6 +22,11 @@ pub struct ScreenSpec {
     pub pitch_mm: f64,
     pub angle_deg: f64,
     pub min_dot_mm: f64,
+    /// Whole-cell rule: a cell is kept only if a disk of this radius around its
+    /// centre fits inside the image. Use the outer extent of the largest mark as
+    /// drawn (at least pitch / sqrt 2; more for polygons whose vertices lie
+    /// outside the circle).
+    pub keep_radius_mm: f64,
 }
 
 pub struct Placement {
@@ -48,7 +53,7 @@ pub fn place_marks(
         });
     }
     // Largest possible mark (100 % coverage) has diameter sqrt(2) * pitch.
-    let cells = lattice.whole_cells(image, screen.pitch_mm * FRAC_1_SQRT_2);
+    let cells = lattice.whole_cells(image, screen.keep_radius_mm.max(screen.pitch_mm * FRAC_1_SQRT_2));
     let marks = cells
         .cells
         .par_iter()
@@ -93,6 +98,7 @@ mod tests {
             pitch_mm: 1.0,
             angle_deg: 22.5,
             min_dot_mm: 0.0,
+            keep_radius_mm: FRAC_1_SQRT_2,
         };
         let p = place_marks(&rect, &spec, &tone(), 1_000_000, |_, _| 0.6).unwrap();
         assert_eq!(p.marks.len(), p.cells.cells.len());
@@ -112,6 +118,7 @@ mod tests {
             pitch_mm: 1.0,
             angle_deg: 0.0,
             min_dot_mm: 0.3,
+            keep_radius_mm: FRAC_1_SQRT_2,
         };
         let p = place_marks(
             &rect,

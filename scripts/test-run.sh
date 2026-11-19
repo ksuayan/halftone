@@ -20,7 +20,7 @@
 #       --units U              in, cm, mm (for --width/--height)  [UNITS]
 #       --orientation O        auto, portrait, landscape          [ORIENTATION]
 #       --printer-margin-mm M  non-printable border per side      [PRINTER_MARGIN_MM]
-#       --no-registration-marks                                   [NO_MARKS=1]
+#       --registration-marks   add registration targets           [MARKS=1]  off
 #
 # Screen
 #       --profile P            screen-print, linocut              [PROFILE]
@@ -59,7 +59,7 @@ HEIGHT="${HEIGHT:-}"
 UNITS="${UNITS:-}"
 ORIENTATION="${ORIENTATION:-}"
 PRINTER_MARGIN_MM="${PRINTER_MARGIN_MM:-}"
-NO_MARKS="${NO_MARKS:-0}"
+MARKS="${MARKS:-0}"
 PROFILE="${PROFILE:-}"
 MESH="${MESH:-110}"
 LPI="${LPI:-}"
@@ -92,7 +92,7 @@ while [ $# -gt 0 ]; do
         --units) UNITS=$(value "$@") || exit 2; shift 2 ;;
         --orientation) ORIENTATION=$(value "$@") || exit 2; shift 2 ;;
         --printer-margin-mm) PRINTER_MARGIN_MM=$(value "$@") || exit 2; shift 2 ;;
-        --no-registration-marks) NO_MARKS=1; shift ;;
+        --registration-marks) MARKS=1; shift ;;
         --profile) PROFILE=$(value "$@") || exit 2; shift 2 ;;
         -m|--mesh) MESH=$(value "$@") || exit 2; shift 2 ;;
         --lpi) LPI=$(value "$@") || exit 2; shift 2 ;;
@@ -142,7 +142,7 @@ add --white-point "$WHITE_POINT"
 add --tolerance-um "$TOLERANCE_UM"
 add --preview-dpi "$PREVIEW_DPI"
 add --threads "$THREADS"
-[ "$NO_MARKS" = 1 ] && ARGS+=(--no-registration-marks)
+[ "$MARKS" = 1 ] && ARGS+=(--registration-marks)
 [ "$INVERT" = 1 ] && ARGS+=(--invert)
 # ${X[@]+...} keeps bash 3.2 happy with `set -u` when an array is empty.
 ARGS+=(${EXTRA[@]+"${EXTRA[@]}"})

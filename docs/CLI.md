@@ -53,7 +53,7 @@ halftone analyze <INPUT> (--paper NAME | --width W --height H) -o <CONFIG.json> 
 | `--angle` | degrees, any value | profile (22.5) | Screen angle. Normalized to 0–90° (a square screen repeats every 90°): `-22.5` becomes `67.5`. Negative values are accepted. |
 | `--ink` | `#RRGGBB` | `#000000` | Ink colour. Anything other than pure black gives a warning, because laser printers screen it into their own pattern. |
 | `--printer-margin-mm` | 0 to 50 (always mm) | 6.35 | The printer's non-printable border per side. The SVG page is the paper minus this on every side, so Fit to Page prints at about 100%. |
-| `--no-registration-marks` | flag | marks on | Leave out the four registration targets and their 12 mm band. |
+| `--registration-marks` | flag | off | Add four registration targets in a 12 mm band around the image. |
 | `--invert` | flag | off | Light areas get large dots instead of dark areas. |
 
 ### Paper sizes
@@ -117,7 +117,7 @@ is added to `user_set` in the configuration.
 | `--black-point` | 0 to 1, below the white point | `tone.black_point` | Linear luminance at or below this prints as solid black. |
 | `--white-point` | 0 to 1, above the black point | `tone.white_point` | Linear luminance at or above this prints no ink. |
 | `--tolerance-um` | 1 to 100 | `geometry.tolerance_um` | Maximum radial error of the polygonal dots, in µm (default 10). |
-| `--registration-marks` | `true`, `false` | `output.registration_marks` | Turn the registration targets on or off. |
+| `--set-registration-marks` | `true`, `false` | `output.registration_marks` | Turn the registration targets on or off. |
 
 Settings that have no override flag (paper, printer margin, invert, mesh) can
 be changed by editing the JSON; see [configuration.md](configuration.md).
@@ -136,7 +136,7 @@ halftone convert <INPUT> (--paper NAME | --width W --height H) -o <OUT.svg> [ana
 
 - `--save-config` writes the configuration used. Without it, no JSON file is written.
 - When both are given, generate overrides win over analyze options. For
-  example, `--no-registration-marks --registration-marks true` keeps the marks.
+  example, `--registration-marks --set-registration-marks false` leaves the marks out.
 - Output is byte-identical to running `analyze` then `generate` with the same settings.
 
 ---
@@ -190,7 +190,7 @@ These aren't options in v1:
 - **Fit:** the whole photo fits inside the image area (contain), centred, aspect ratio kept.
 - **Edges:** only whole cells are drawn, so no dot is cut off at the edge.
 - **Alpha:** transparent pixels are treated as white.
-- **Registration targets:** a circle (3 mm radius) with a 10 mm crosshair at the middle of each side, drawn with a 0.5 pt line in the ink colour.
+- **Registration targets** (when enabled): a circle (3 mm radius) with a 10 mm crosshair at the middle of each side, drawn with a 0.5 pt line in the ink colour.
 - **Colour:** embedded ICC profiles are honoured. Untagged images are treated as sRGB; an unusable profile gives a warning and falls back to sRGB.
 
 ### Safety limits
@@ -231,8 +231,8 @@ These aren't options in v1:
 # A3, 110-mesh screen, with preview
 halftone convert photo.jpg --paper a3 --mesh 110 -o photo.svg --preview photo.png
 
-# Custom 30 × 40 cm, explicit 25 LPI at 15°, no registration marks
-halftone convert photo.jpg --width 30 --height 40 --units cm --lpi 25 --angle 15 --no-registration-marks -o photo.svg
+# Custom 30 × 40 cm, explicit 25 LPI at 15°, with registration marks
+halftone convert photo.jpg --width 30 --height 40 --units cm --lpi 25 --angle 15 --registration-marks -o photo.svg
 
 # Two steps: analyze, then try lighter tones without editing the JSON
 halftone analyze photo.jpg --paper 9x12 -o photo.halftone.json

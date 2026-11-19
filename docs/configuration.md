@@ -17,7 +17,7 @@ JSON Schema: [config.schema.json](config.schema.json) (regenerate with `halftone
 
 ## Example
 
-A3 paper, 110-mesh screen, landscape photo (paper turned to match):
+A3 paper, 110-mesh screen, landscape photo (paper turned to match), with `--registration-marks`:
 
 ```json
 {
@@ -85,7 +85,7 @@ A3 paper, 110-mesh screen, landscape photo (paper turned to match):
 | `output.paper_width_mm`, `paper_height_mm` | Paper size | 20–2000 mm |
 | `output.printer_margin_mm` | Unprintable border per side; the SVG page is the paper minus this on every side | 0–50 mm |
 | `output.ink` | Fill colour `#RRGGBB` (warning unless `#000000`) | |
-| `output.registration_marks` | Four circle-and-crosshair targets in a 12 mm band | |
+| `output.registration_marks` | Four circle-and-crosshair targets in a 12 mm band (default `false`) | |
 | `screen.lpi` | Lines per inch along the lattice axes; pitch = 25.4 / lpi mm | 5–150 (warning above mesh/4) |
 | `screen.angle_deg` | Screen rotation, normalized to [0, 90) | |
 | `screen.mesh_count`, `mesh_ratio` | Mesh-based recommendation: lpi = mesh / ratio | 40–500, 3–8 |

@@ -109,9 +109,9 @@ pub struct AnalyzeArgs {
     /// Printer's non-printable border per side, in mm.
     #[arg(long)]
     pub printer_margin_mm: Option<f64>,
-    /// Omit registration targets (they are on by default).
+    /// Add registration targets (off by default).
     #[arg(long)]
-    pub no_registration_marks: bool,
+    pub registration_marks: bool,
     /// Light areas get large marks.
     #[arg(long)]
     pub invert: bool,
@@ -150,7 +150,7 @@ impl AnalyzeArgs {
             angle_deg: self.angle,
             ink: self.ink.clone(),
             printer_margin_mm: self.printer_margin_mm,
-            registration_marks: self.no_registration_marks.then_some(false),
+            registration_marks: self.registration_marks.then_some(true),
             invert: self.invert.then_some(true),
         })
     }
@@ -197,9 +197,9 @@ pub struct GenerateArgs {
     /// Polygon tolerance in µm.
     #[arg(long)]
     pub tolerance_um: Option<f64>,
-    /// Force registration marks on or off.
+    /// Override registration targets on or off.
     #[arg(long, value_name = "BOOL")]
-    pub registration_marks: Option<bool>,
+    pub set_registration_marks: Option<bool>,
 }
 
 impl GenerateArgs {
@@ -247,7 +247,7 @@ impl GenerateArgs {
             c.geometry.tolerance_um = v;
             set("geometry.tolerance_um", &mut c);
         }
-        if let Some(v) = self.registration_marks {
+        if let Some(v) = self.set_registration_marks {
             c.output.registration_marks = v;
             set("output.registration_marks", &mut c);
         }

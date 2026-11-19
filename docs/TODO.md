@@ -17,7 +17,7 @@ Status: `[ ]` open · `[~]` in progress · `[x]` done · `[-]` dropped/deferred
 | Output device | 600 dpi laser printer, positive on transparency film | One device pixel ≈ 42.3 µm. Ink must be pure `#000000`, because any gray gets screened by the printer. Printed with **Fit to Page** (see below). Minimum reliable dot on film must be measured (hypothesis: ≥ 3 px ≈ 0.13 mm). At 22 LPI a cell is about 27 px wide (about 740 tone levels), so the printer resolution doesn't limit tone. |
 | Target apps | Affinity Designer and Inkscape; standard SVG, no binary data | Test import early: physical units (`in`/`mm`), `viewBox` scale, fill rule, holes, arc commands, and large-path performance. No embedded rasters or fonts. |
 | Size target | 9 × 12 in and A3 (297 × 420 mm) | At 22 LPI: about 52k cells (9 × 12) and about 94k (A3). At 45 LPI: about 220k and 390k. Benchmarks and limits are sized to A3 at 45 LPI as the upper case. Both sizes exceed Letter, so this needs a tabloid or A3 laser printer. |
-| Registration marks | **Industry-standard printer's registration targets, on by default**; `--registration-marks` / `--no-registration-marks` | Standard target: concentric circle plus crosshair, centered on each of the four edges, outside the image area. Geometry follows the usual print-application defaults (≈ 6 pt offset from the image, thin hairline), but the stroke is at least 0.5 pt (≈ 4 device px at 600 dpi) so it holds on laser film. Same ink as the artwork. Written as a separate `<path id="registration-marks">` so the halftone stays one compound path and the marks are easy to remove in Affinity or Inkscape. The target spacing is known, so it also checks Fit to Page scale. Crop/trim marks are a possible separate flag (off by default) for later. |
+| Registration marks | **Industry-standard printer's registration targets, off by default** (changed from on, 2026-11-18); `--registration-marks` on analyze/convert, `--set-registration-marks true\|false` on generate | Standard target: concentric circle plus crosshair, centered on each of the four edges, outside the image area. Geometry follows the usual print-application defaults (≈ 6 pt offset from the image, thin hairline), but the stroke is at least 0.5 pt (≈ 4 device px at 600 dpi) so it holds on laser film. Same ink as the artwork. Written as a separate `<path id="registration-marks">` so the halftone stays one compound path and the marks are easy to remove in Affinity or Inkscape. The target spacing is known, so it also checks Fit to Page scale. Crop/trim marks are a possible separate flag (off by default) for later. |
 | Memory | **Must run comfortably on an 8 GB Apple machine** | Peak resident memory ≤ 2 GB for every benchmark case including A3 at 45 LPI, leaving room for macOS and Affinity/Inkscape open at the same time. Hard safety stop well below 4 GB. Drives the max-input-pixels limit (D32) and the early downscale. |
 | Preview | Yes, PNG | `--preview <file.png>`, rasterized from the final geometry with `tiny-skia`, so the preview matches the SVG exactly. |
 | Print scaling | **Fit to Page** | Fit to Page rescales the artwork to the printable area, which changes the effective LPI and dot sizes. Mitigation: make the SVG canvas match the target paper's printable area (paper size minus a configurable `printer_margin`), so Fit to Page scales by about 1.0. Report the expected scale and effective LPI, and warn when the scale differs from 1.0 by more than a tolerance (e.g. 2%). The registration marks double as a check of the actual scale. |
@@ -66,7 +66,7 @@ the outcome and evidence here, then update the spec.
 | D26 | Source smoothing/sharpening before sampling (moiré from textured or printed sources) | Exp A/B | **Decided:** no separate filter; the 2 px/cell box downscale is the prefilter (§A.4) |
 | D27 | Determinism scope: same machine and version, or byte-identical across platforms | Exp D (ties to D9) | Same machine: identical across runs and thread counts. Cross-platform: untested (needs Apple Silicon run) (§D.2) |
 | D28 | Performance and memory targets | Kyo | **Decided:** 5–10 min hard ceiling for A3 at 45 LPI; peak ≤ 2 GB so it runs on an 8 GB Apple machine |
-| D29 | Layout: margin size for marks, `printer_margin` for Fit to Page, edge policy | Phase 3 | **Decided:** whole cells only (trimming deferred); standard registration targets, on by default. Still open: exact margin |
+| D29 | Layout: margin size for marks, `printer_margin` for Fit to Page, edge policy | Phase 3 | **Decided:** whole cells only (trimming deferred); standard registration targets, off by default. Still open: exact margin |
 | D30 | License | Kyo | **Decided:** MIT |
 | D31 | Config source path: relative to the JSON or absolute | Phase 3 | **Decided:** relative to the config folder when inside it, else absolute |
 | D32 | Safety-limit defaults: max input pixels, cells, vertices (sized to the 2 GB budget) | Phase 1 | **Decided:** 150 MP input, 2 M cells, 6 M union vertices (`halftone_types::limits`) |
@@ -245,7 +245,7 @@ for the decisions above. Not shipped code. Results: [Phase0-Report.md](Phase0-Re
 - [x] Physical `width`/`height` in mm; `viewBox` in integer µm (no float formatting, so no `ryu`)
 - [x] Transparent background, no raster, no metadata
 - [x] Registration targets: circle + crosshair on each edge in the mark band, 0.5 pt stroke, ink colour, `<path id="registration-marks">`
-- [x] `output.registration_marks` (default `true`); `--no-registration-marks` on analyze/convert, `--registration-marks true|false` on generate
+- [x] `output.registration_marks` (default `false` since 2026-11-18; was `true`); `--registration-marks` on analyze/convert, `--set-registration-marks true|false` on generate; same in `scripts/test-run.sh` (`MARKS=1`)
 - [ ] Check marks and artwork in Affinity Designer and Inkscape (Kyo)
 - [x] Warning when ink is not pure black
 - [x] Output validator (S§19); every generated SVG is validated before writing
@@ -257,7 +257,7 @@ for the decisions above. Not shipped code. Results: [Phase0-Report.md](Phase0-Re
 
 - [x] `analyze`, `generate`, `convert`, `validate`, `schema`, `version`
 - [x] `analyze` options incl. `--paper`, `--width/--height/--units`, `--orientation`, `--profile`, `--mesh`, `--lpi`, `--angle`, `--ink`, `--printer-margin-mm`, `--invert`
-- [x] `generate` overrides (`--set-lpi`, `--set-angle`, `--set-ink`, `--min-dot-mm`, `--max-coverage`, `--gamma`, `--black-point`, `--white-point`, `--tolerance-um`, `--registration-marks`), validated by the same code as JSON
+- [x] `generate` overrides (`--set-lpi`, `--set-angle`, `--set-ink`, `--min-dot-mm`, `--max-coverage`, `--gamma`, `--black-point`, `--white-point`, `--tolerance-um`, `--set-registration-marks`), validated by the same code as JSON
 - [x] `convert` = `analyze` + `generate` (byte-identical output, tested)
 - [x] `--verbose`: effective settings, user-set fields, geometry stats, stage timings
 - [x] Actionable errors; warnings printed separately
@@ -301,6 +301,7 @@ for the decisions above. Not shipped code. Results: [Phase0-Report.md](Phase0-Re
 - [x] ICC profile names shown as plain text in `source.color` (was a debug dump; found by the test run)
 - [x] `.gitignore` covers build output, local photos, generated output, OS and editor files; `CLAUDE.md` added with agent instructions (2026-11-18)
 - [x] [CLI.md](CLI.md): every command, option, accepted value, default, limit and exit code; missing `--help` texts filled in
+- [x] Whole-cell rule uses the drawn polygon's outer radius (+1 µm), not the circle's: with marks off the image touches the page edge and full-size dots could poke 2–7 µm past it (caught by the SVG validator on a dark scan; regression test added, 2026-11-18)
 - [x] Image areas too small for one whole screen cell now fail with exit 5 (previously wrote an empty SVG; found while writing CLI.md)
 - [x] Integration tests (S§17.3): mesh-derived and explicit LPI, overrides, orientation, uniform-gray coverage, exit codes
 - [x] Regression checks on structure, size, area and coverage rather than bytes (except same-version determinism)

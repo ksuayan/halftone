@@ -40,7 +40,7 @@ Common options:
 | `--mesh N` / `--lpi N` | screen mesh count (LPI = mesh / 5) or explicit LPI |
 | `--angle DEG` | screen angle (default 22.5°) |
 | `--printer-margin-mm MM` | printer's unprintable border (default 6.35 mm) |
-| `--no-registration-marks` | omit the registration targets (on by default) |
+| `--registration-marks` | add registration targets (off by default) |
 | `--invert` | light areas get large dots |
 | `--min-dot-mm`, `--max-coverage`, `--gamma`, `--black-point`, `--white-point` | tone overrides at generate time |
 | `--preview FILE.png`, `--save-config FILE.json`, `-v` | extra outputs and diagnostics |
@@ -48,8 +48,8 @@ Common options:
 ### Printing
 
 The SVG page is your paper minus the printer margin on each side, so printing
-with **Fit to Page** scales by about 1.0. Measure the distance between the
-registration targets on the film to confirm the scale. Print in pure black
+with **Fit to Page** scales by about 1.0. With `--registration-marks`, measure
+the distance between the targets on the film to confirm the scale. Print in pure black
 (`#000000`); laser printers screen any other colour into their own pattern.
 
 Run `halftone --help` and `halftone <command> --help` for every option.
@@ -59,7 +59,7 @@ Run `halftone --help` and `halftone <command> --help` for every option.
 ```bash
 scripts/test-run.sh                          # prototypes/photos -> prototypes/output/test-run (letter, 110 mesh)
 scripts/test-run.sh -p a3 --lpi 25 --angle 15 --gamma 1.5
-PAPER=9x12 MAX_COVERAGE=0.9 scripts/test-run.sh --invert
+PAPER=9x12 MAX_COVERAGE=0.9 scripts/test-run.sh --invert --registration-marks
 ```
 
 For each photo it writes the SVG, a PNG preview, the effective config and a

@@ -74,11 +74,11 @@ fn overrides_are_validated_like_json() {
         s(&out),
         "--set-angle",
         "-22.5",
-        "--no-registration-marks",
+        "--registration-marks",
         "--save-config",
         s(&saved),
     ]);
-    // --no-registration-marks is an analyze flag, not a generate override.
+    // --registration-marks (on switch) is an analyze flag; generate uses --set-registration-marks.
     assert_eq!(o.status.code(), Some(2));
     let o = run(&[
         "generate",
@@ -87,18 +87,37 @@ fn overrides_are_validated_like_json() {
         s(&out),
         "--set-angle",
         "-22.5",
-        "--registration-marks",
-        "false",
+        "--set-registration-marks",
+        "true",
         "--save-config",
         s(&saved),
     ]);
     assert!(o.status.success(), "{}", stderr(&o));
     let text = std::fs::read_to_string(&saved).unwrap();
     assert!(
-        text.contains("\"angle_deg\": 67.5") && text.contains("\"registration_marks\": false"),
+        text.contains("\"angle_deg\": 67.5") && text.contains("\"registration_marks\": true"),
         "{text}"
     );
-    assert!(!std::fs::read_to_string(&out).unwrap().contains("registration-marks"));
+    assert!(std::fs::read_to_string(&out).unwrap().contains("registration-marks"));
+    // Marks are off by default.
+    let plain = dir.path().join("plain.svg");
+    assert!(run(&["generate", s(&cfg), "-o", s(&plain)]).status.success());
+    assert!(!std::fs::read_to_string(&plain).unwrap().contains("registration-marks"));
+    // convert: generate override wins over the analyze switch.
+    let both = dir.path().join("both.svg");
+    let o = run(&[
+        "convert",
+        s(&img),
+        "--paper",
+        "a5",
+        "--registration-marks",
+        "--set-registration-marks",
+        "false",
+        "-o",
+        s(&both),
+    ]);
+    assert!(o.status.success(), "{}", stderr(&o));
+    assert!(!std::fs::read_to_string(&both).unwrap().contains("registration-marks"));
 }
 
 #[test]
@@ -145,6 +164,7 @@ fn exit_codes() {
         "mm",
         "--lpi",
         "5",
+        "--registration-marks",
         "-o",
         s(&tiny),
     ]);
