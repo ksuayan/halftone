@@ -1,0 +1,20 @@
+[package]
+name = "halftone-svg"
+description = "SVG serialization, output validation and PNG preview for Halftone artwork."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+halftone-types.workspace = true
+roxmltree.workspace = true
+thiserror.workspace = true
+tiny-skia.workspace = true
+
+[dev-dependencies]
+resvg.workspace = true
+
+[lints]
+workspace = true

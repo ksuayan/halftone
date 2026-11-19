@@ -1,0 +1,51 @@
+[workspace]
+resolver = "3"
+members = ["crates/*"]
+exclude = ["prototypes"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.89"
+license = "MIT"
+publish = false
+
+[workspace.dependencies]
+halftone-types = { path = "crates/halftone-types" }
+halftone-image = { path = "crates/halftone-image" }
+halftone-core = { path = "crates/halftone-core" }
+halftone-geometry = { path = "crates/halftone-geometry" }
+halftone-svg = { path = "crates/halftone-svg" }
+halftone = { path = "crates/halftone" }
+
+# Pure-Rust policy: no C/C++ dependencies without a documented justification.
+anyhow = "1.0.104"
+blake3 = { version = "1.8.7", features = ["pure"] }
+clap = { version = "4.6.8", features = ["derive"] }
+fast_image_resize = { version = "6.1.0", features = ["rayon"] }
+geo = "0.33.1"
+geo-types = "0.7.20"
+i_overlay = { version = "9.2.0", features = ["allow_multithreading"] }
+image = { version = "0.25.10", default-features = false, features = ["jpeg", "png", "tiff", "rayon"] }
+moxcms = "0.9.2"
+proptest = "1.12.0"
+rayon = "1.12.0"
+resvg = { version = "0.50.0", default-features = false }
+roxmltree = "0.21.2"
+schemars = "1.2.3"
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = "1.0.154"
+serde_path_to_error = "0.1.20"
+tempfile = "3.27.0"
+thiserror = "2.0.21"
+tiny-skia = "0.12.0"
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+
+[workspace.lints.clippy]
+too_many_arguments = "deny"
+cognitive_complexity = "warn"
+
+[profile.release]
+debug = "line-tables-only"

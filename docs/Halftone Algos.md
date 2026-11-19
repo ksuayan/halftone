@@ -771,12 +771,16 @@ marked *(verify)* are newer or less certain.
 
 **Geometry**
 
--   `geo-types` — interchange types at crate boundaries only; do not
-    expose them in public APIs (spec §14.1).
+-   `geo-types` — **chosen as the shared geometry type** (decision D33,
+    2026-11-18), including in public APIs, as a deliberate exception to
+    spec §14.1. Integer micrometre coordinates (`MultiPolygon<i32>`), y
+    down. The `geo` crate's Boolean operations use `i_overlay`, the engine
+    selected in Phase 0, so the two interoperate directly.
 -   `rstar` — R-tree spatial index for minimum-gap and nearest-feature
     checks (§10.2).
--   `kurbo` — curve primitives and flattening, relevant only if
-    curve-aware circles are pursued (§8.2 Option B). `linesweeper`
+-   `kurbo` — curve primitives and flattening. Used locally for curves
+    such as registration marks; not the interchange type (D33). Relevant
+    again if curve-aware circles are pursued (§8.2 Option B). `linesweeper`
     provides curve Boolean operations on top of it *(verify)*.
 
 **SVG output**

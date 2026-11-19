@@ -1,0 +1,21 @@
+[package]
+name = "halftone-image"
+description = "Image decoding and linear-light luminance for Halftone (JPEG, PNG, TIFF; ICC via moxcms)."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+fast_image_resize.workspace = true
+image.workspace = true
+moxcms.workspace = true
+rayon.workspace = true
+thiserror.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true
+
+[lints]
+workspace = true

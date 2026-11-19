@@ -1,0 +1,419 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Config",
+  "type": "object",
+  "properties": {
+    "app_version": {
+      "description": "Halftone version that wrote this file.",
+      "type": "string"
+    },
+    "geometry": {
+      "$ref": "#/$defs/GeometrySettings"
+    },
+    "layout": {
+      "$ref": "#/$defs/Layout"
+    },
+    "output": {
+      "$ref": "#/$defs/Output"
+    },
+    "recommendations": {
+      "$ref": "#/$defs/Recommendations"
+    },
+    "schema_version": {
+      "type": "integer",
+      "format": "uint32",
+      "minimum": 0
+    },
+    "screen": {
+      "$ref": "#/$defs/Screen"
+    },
+    "source": {
+      "$ref": "#/$defs/Source"
+    },
+    "tone": {
+      "$ref": "#/$defs/Tone"
+    },
+    "user_set": {
+      "description": "Dotted paths of settings the user supplied (e.g. `screen.lpi`).",
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "app_version",
+    "source",
+    "output",
+    "screen",
+    "tone",
+    "geometry",
+    "layout",
+    "recommendations",
+    "user_set"
+  ],
+  "$defs": {
+    "Fit": {
+      "oneOf": [
+        {
+          "description": "Whole image inside the image area, aspect preserved, centred.",
+          "type": "string",
+          "const": "contain"
+        }
+      ]
+    },
+    "GeometrySettings": {
+      "type": "object",
+      "properties": {
+        "px_per_cell": {
+          "description": "Working-image resolution in pixels per screen cell (per axis).",
+          "type": "number",
+          "format": "double"
+        },
+        "tolerance_um": {
+          "description": "Maximum radial error of polygonal circles, in micrometres.",
+          "type": "number",
+          "format": "double"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "tolerance_um",
+        "px_per_cell"
+      ]
+    },
+    "Grid": {
+      "type": "string",
+      "enum": [
+        "cartesian"
+      ]
+    },
+    "Layout": {
+      "type": "object",
+      "properties": {
+        "cells": {
+          "description": "Whole screen cells inside the image area.",
+          "type": "integer",
+          "format": "uint64",
+          "minimum": 0
+        },
+        "image": {
+          "description": "Where the photograph sits on the page.",
+          "$ref": "#/$defs/RectMm"
+        },
+        "page_height_mm": {
+          "type": "number",
+          "format": "double"
+        },
+        "page_width_mm": {
+          "description": "SVG page size (paper minus printer margins).",
+          "type": "number",
+          "format": "double"
+        },
+        "pitch_mm": {
+          "type": "number",
+          "format": "double"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "page_width_mm",
+        "page_height_mm",
+        "image",
+        "pitch_mm",
+        "cells"
+      ]
+    },
+    "LpiSource": {
+      "oneOf": [
+        {
+          "description": "mesh_count / mesh_ratio.",
+          "type": "string",
+          "const": "mesh"
+        },
+        {
+          "description": "Profile default (no mesh count given).",
+          "type": "string",
+          "const": "profile"
+        },
+        {
+          "description": "Supplied by the user.",
+          "type": "string",
+          "const": "user"
+        }
+      ]
+    },
+    "Output": {
+      "type": "object",
+      "properties": {
+        "display_units": {
+          "description": "Units for reports and messages.",
+          "$ref": "#/$defs/Units"
+        },
+        "fit": {
+          "$ref": "#/$defs/Fit"
+        },
+        "ink": {
+          "description": "Fill colour, `#RRGGBB`. Laser output should be pure black.",
+          "type": "string"
+        },
+        "paper": {
+          "description": "Named paper size, if one was used.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "paper_height_mm": {
+          "type": "number",
+          "format": "double"
+        },
+        "paper_width_mm": {
+          "description": "Paper size. The SVG page is this size minus `printer_margin_mm` on every side,\nso printing with Fit to Page scales by about 1.0.",
+          "type": "number",
+          "format": "double"
+        },
+        "printer_margin_mm": {
+          "description": "Non-printable border of the target printer, per side.",
+          "type": "number",
+          "format": "double"
+        },
+        "registration_marks": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "paper_width_mm",
+        "paper_height_mm",
+        "printer_margin_mm",
+        "fit",
+        "ink",
+        "registration_marks",
+        "display_units"
+      ]
+    },
+    "Recommendations": {
+      "type": "object",
+      "properties": {
+        "lpi": {
+          "type": "number",
+          "format": "double"
+        },
+        "lpi_range": {
+          "description": "Advisory LPI range for the mesh (mesh/5 .. mesh/4), if a mesh is known.",
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "number",
+            "format": "double"
+          },
+          "maxItems": 2,
+          "minItems": 2
+        },
+        "lpi_source": {
+          "$ref": "#/$defs/LpiSource"
+        },
+        "notes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "profile": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "profile",
+        "lpi",
+        "lpi_source",
+        "notes"
+      ]
+    },
+    "RectMm": {
+      "type": "object",
+      "properties": {
+        "height_mm": {
+          "type": "number",
+          "format": "double"
+        },
+        "width_mm": {
+          "type": "number",
+          "format": "double"
+        },
+        "x_mm": {
+          "type": "number",
+          "format": "double"
+        },
+        "y_mm": {
+          "type": "number",
+          "format": "double"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "x_mm",
+        "y_mm",
+        "width_mm",
+        "height_mm"
+      ]
+    },
+    "Screen": {
+      "type": "object",
+      "properties": {
+        "angle_deg": {
+          "description": "Lattice rotation in degrees, normalized to [0, 90).",
+          "type": "number",
+          "format": "double"
+        },
+        "grid": {
+          "$ref": "#/$defs/Grid"
+        },
+        "lpi": {
+          "description": "Lines per inch, measured along the lattice axes (pitch = 25.4 / lpi mm).",
+          "type": "number",
+          "format": "double"
+        },
+        "mesh_count": {
+          "description": "Screen mesh count (threads per inch), if known.",
+          "type": [
+            "number",
+            "null"
+          ],
+          "format": "double"
+        },
+        "mesh_ratio": {
+          "description": "Mesh-to-LPI ratio used for recommendations (5.0 conservative, 4.0 aggressive).",
+          "type": "number",
+          "format": "double"
+        },
+        "shape": {
+          "$ref": "#/$defs/Shape"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "grid",
+        "shape",
+        "lpi",
+        "angle_deg",
+        "mesh_ratio"
+      ]
+    },
+    "Shape": {
+      "type": "string",
+      "enum": [
+        "circle"
+      ]
+    },
+    "Source": {
+      "type": "object",
+      "properties": {
+        "blake3": {
+          "description": "BLAKE3 hash of the source file; generation warns when it no longer matches.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "color": {
+          "description": "How luminance is derived (ICC path or sRGB assumption).",
+          "type": "string"
+        },
+        "height_px": {
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0
+        },
+        "orientation": {
+          "type": "string"
+        },
+        "path": {
+          "description": "Path to the source image, relative to the config file's directory or absolute.",
+          "type": "string"
+        },
+        "pixel_format": {
+          "type": "string"
+        },
+        "width_px": {
+          "description": "Pixel size after EXIF orientation.",
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "width_px",
+        "height_px",
+        "orientation",
+        "pixel_format",
+        "color"
+      ]
+    },
+    "Tone": {
+      "type": "object",
+      "properties": {
+        "analysis_background": {
+          "description": "Transparent pixels are composited over this colour before analysis.",
+          "type": "string"
+        },
+        "black_point": {
+          "description": "Linear luminance at or below this is treated as black (0..1).",
+          "type": "number",
+          "format": "double"
+        },
+        "gamma": {
+          "description": "Midtone gamma: normalized luminance is raised to 1/gamma (1.0 = none; >1 lightens).",
+          "type": "number",
+          "format": "double"
+        },
+        "invert": {
+          "description": "false: dark source -> large marks. true: light source -> large marks.",
+          "type": "boolean"
+        },
+        "max_coverage": {
+          "description": "Upper bound on target coverage (1.0 = solid shadows allowed).",
+          "type": "number",
+          "format": "double"
+        },
+        "min_dot_mm": {
+          "description": "Marks smaller than this diameter are not drawn.",
+          "type": "number",
+          "format": "double"
+        },
+        "white_point": {
+          "description": "Linear luminance at or above this is treated as white (0..1).",
+          "type": "number",
+          "format": "double"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "invert",
+        "black_point",
+        "white_point",
+        "gamma",
+        "min_dot_mm",
+        "max_coverage",
+        "analysis_background"
+      ]
+    },
+    "Units": {
+      "description": "Units a user may enter dimensions in.",
+      "type": "string",
+      "enum": [
+        "in",
+        "cm",
+        "mm"
+      ]
+    }
+  }
+}
